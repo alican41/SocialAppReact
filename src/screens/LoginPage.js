@@ -1,21 +1,25 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TextInput, Pressable, Image } from 'react-native';
-import React, {useState} from 'react';
+import { StyleSheet, Text, View, Image } from 'react-native';
+import React from 'react';
 import {Loading, CustomTextInput, CustomButton} from '../components/';
+import { useSelector, useDispatch } from 'react-redux';
+import { setEmail, setPass, setIsLoading } from '../redux/userSlice';
 
 
 
 const LoginPage = ({navigation}) => {
 
-  const [email, setEmail] = useState('');
-  const [pass, setPass] = useState('');
-  const [result, setResult] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  //const [email, setEmail] = useState('');
+  //const [pass, setPass] = useState('');
+  //const [isLoading, setIsLoading] = useState(false);
+
+  const {email, pass, isLoading} = useSelector((state) => state.user);
+  const dispatch = useDispatch();
 
   return (
     <View style={styles.container}>
 
-      <Text style={styles.welcome}>Welcome {result}</Text>
+      <Text style={styles.welcome}>Welcome</Text>
 
       <Image style={styles.image}
         source={require('../../assets/images/loginicon.png')}
@@ -24,21 +28,21 @@ const LoginPage = ({navigation}) => {
       <CustomTextInput
           title="Email"
           isSecureText={false}
-          handleOnChangeText={setEmail}
+          handleOnChangeText={(text) => dispatch(setEmail(text))}
           handleValue={email}
           handlePlaceholder="Enter your email"
       />
       <CustomTextInput
           title="Password"
           isSecureText={true}
-          handleOnChangeText={setPass}
+          handleOnChangeText={(pass) => dispatch(setPass(pass))}
           handleValue={pass}
           handlePlaceholder="Enter your password"
       />
 
       <CustomButton 
           buttonText="Login"
-          handleOnPress={() => setIsLoading(true)}
+          handleOnPress={() => dispatch(setIsLoading(true))}
       />
 
       <CustomButton 
@@ -46,7 +50,7 @@ const LoginPage = ({navigation}) => {
           handleOnPress={() => navigation.navigate('Signup')}
       />
 
-      { isLoading ? <Loading changeIsLoading={() => setIsLoading(false)} /> : null }
+      { isLoading ? <Loading changeIsLoading={() => dispatch(setIsLoading(false))} /> : null }
       
 
       <StatusBar style="auto" />
