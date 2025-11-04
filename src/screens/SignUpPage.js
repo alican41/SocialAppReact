@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { StyleSheet, View, Text, SafeAreaView, Image, Pressable } from "react-native";
+import { StyleSheet, View, Text, Image, Pressable } from "react-native";
 import { CustomTextInput, CustomButton } from "../components/";
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const SignUpPage = ({navigation}) => {
   const [email, setEmail] = useState("");
