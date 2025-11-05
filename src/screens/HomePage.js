@@ -1,32 +1,53 @@
 import React, {useState, useEffect, use} from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Modal, TextInput } from 'react-native';
 import { collection, addDoc, getDocs, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { CustomButton } from '../components/';
-import Icon from 'react-native-vector-icons/MaterialIcons';
-import { current } from '@reduxjs/toolkit';
+import { FontAwesome5 } from '@expo/vector-icons';
+
 
 const HomePage = () => {
 
     const [data, setData] = useState([]);
-    const [isSaved, setIsSaved] = useState(false);
+    const [isModalVisible, setIsModalVisible] = useState(false);
+    const [selectedItem, setSelectedItem] = useState(null);
+    const [editName, setEditName] = useState('');
+    const [editDescription, setEditDescription] = useState('');
+    const [editPoints, setEditPoints] = useState('');
     //console.log("data: ", data);
 
     useEffect(() => {
         getData();
-    }, [isSaved])
+    }, [])
 
-    const sendData = async () => {
+    const addData = async () => {
         try {
+            const newPoints = Number(editPoints)
             const docRef = await addDoc(collection(db, "Lessons"), {
-                name: "React Native",
-                description: "Learn React Native basics",
-                points: 105
-
+                name: editName,
+                description: editDescription,
+                points: newPoints
             });
+            const newItem = {
+                id: docRef.id,
+                name: editName,
+                description: editDescription,
+                points: newPoints
+            };
+            setData(currentData => [...currentData, newItem]);
+            handleCancelEdit();
+            
             console.log("Document written with ID: ", docRef.id);
         } catch (e) {
             console.error("Error adding document: ", e);
+        }
+    }
+
+    const handleModalSave = () => {
+        if (selectedItem) {
+            updateData();
+        } else {
+            addData();
         }
     }
 
@@ -59,12 +80,48 @@ const HomePage = () => {
         
     }
 
+    const handleAddPress = () => {
+        setSelectedItem(null); // Seçili öğe yok = "Ekle" modu
+        setEditName('');       // Input'ları boşalt
+        setEditDescription('');
+        setEditPoints('');
+        setIsModalVisible(true); // Modalı aç
+    };
+
+    const handleEditPress = (item) => {
+        setSelectedItem(item);
+        setEditName(item.name);
+        setEditDescription(item.description);
+        setEditPoints(item.points.toString());
+        setIsModalVisible(true);
+    }
+
+    const handleCancelEdit = () => {
+        setIsModalVisible(false);
+        setSelectedItem(null);
+    }
+
     const updateData=async()=>{
+
+        if (!selectedItem) return;
+
         try {
-            const lessonData = doc(db, "Lessons", "NRPhuJ0bUqd36q0UUoTB");
-            await updateDoc(lessonData, {
-                points: 150
+            const lessonRef = doc(db, "Lessons", selectedItem.id);
+            await updateDoc(lessonRef, {
+                name: editName,
+                description: editDescription,
+                points: Number(editPoints)
             })
+            
+            setData(currentData => 
+                currentData.map(item => 
+                    item.id === selectedItem.id 
+                ? { ...item, name: editName, description: editDescription, points: Number(editPoints) } 
+                : item
+            ));
+
+            handleCancelEdit();
+
         } catch (error) {
             console.log("HomePage line 42: ", error);
         }
@@ -85,36 +142,76 @@ const HomePage = () => {
                             <Text>Points: {item.points}</Text>
                         </View>
 
-                        <TouchableOpacity 
-                            onPress={() => deleteData(item.id)}
-                            style={styles.deleteButton}
-                        >
-                            <Icon name="delete" size={24} color="#E53935" /> 
-                        </TouchableOpacity>
-
+                        <View style={styles.actionButtons}>
+                            <TouchableOpacity 
+                                onPress={() => deleteData(item.id)}
+                                style={styles.iconButton}
+                            >
+                                <FontAwesome5 name="trash-alt" size={22} color="#E53935" /> 
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => handleEditPress(item)}
+                                style={styles.iconButton}
+                            >
+                                <FontAwesome5 name="edit" size={22} color="#1E88E5" />
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 ))}
             </ScrollView>
-            
-            <View style={styles.buttonContainer}>
-                <CustomButton 
-                    buttonText="Save"
-                    handleOnPress={() => {sendData, setIsSaved(!isSaved)}}
-                />
-                <CustomButton 
-                    buttonText="Get Data"
-                    handleOnPress={getData}
-                />
-                <CustomButton 
-                    buttonText="Delete Data"
-                    handleOnPress={deleteData}
-                />
-                <CustomButton 
-                    buttonText="Update Data"
-                    handleOnPress={updateData}
-                />
-            </View>        
-            
+
+            <Modal
+                animationType="slide"
+                transparent={true} // Arka plan yarı saydam olsun
+                visible={isModalVisible} // Görünürlüğü state'e bağla
+                onRequestClose={handleCancelEdit} // Android'de geri tuşuna basınca
+            >
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalView}>
+                        <Text style={styles.modalTitle}>
+                            {selectedItem ? "Dersi Düzenle" : "Yeni Ders Ekle"}
+                        </Text>
+                        
+                        <TextInput
+                            style={styles.textInput}
+                            placeholder="Ders Adı"
+                            value={editName}
+                            onChangeText={setEditName}
+                        />
+                        <TextInput
+                            style={styles.textInput}
+                            placeholder="Açıklama"
+                            value={editDescription}
+                            onChangeText={setEditDescription}
+                        />
+                        <TextInput
+                            style={styles.textInput}
+                            placeholder="Puan"
+                            value={editPoints}
+                            onChangeText={setEditPoints}
+                            keyboardType="numeric" // Sadece sayı girilsin
+                        />
+
+                        <View style={styles.modalButtonContainer}>
+                            <CustomButton
+                                buttonText="İptal"
+                                handleOnPress={handleCancelEdit}
+                            />
+                            <CustomButton
+                                buttonText="Kaydet"
+                                handleOnPress={handleModalSave}
+                            />
+                        </View>
+
+                    </View>
+                </View>
+            </Modal>     
+            <TouchableOpacity
+                style={styles.fab}
+                onPress={handleAddPress} 
+            >
+                <FontAwesome5 name="plus" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
         </View>
     );
 }
@@ -125,12 +222,11 @@ export default HomePage;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
         padding: 10
     },
     scrollableList: {
         paddingTop: 20,
+        marginBottom: 40,
         flex: 1,
         borderWidth: 1,
         borderColor: '#ccc',
@@ -150,21 +246,74 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.2,
         shadowRadius: 1.41,
     },
-    buttonContainer: {
-        paddingTop: 10,
-        width: '100%',
-        marginBottom: 30,
-        alignContent: 'center',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
     itemContent: {
         flex: 1,
         marginRight: 10,
     },
-    deleteButton: {
-        padding: 5
+    actionButtons: {
+        flexDirection: 'column',
+    },
+    iconButton: {
+        padding: 8
+    },
+    modalContainer: {
+        flex: 1,
+        justifyContent: 'center', // Modalı dikeyde ortala
+        alignItems: 'center',     // Modalı yatayda ortala
+        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Arka planı karart
+    },
+    modalView: {
+        width: '80%',
+        backgroundColor: 'white',
+        borderRadius: 10,
+        padding: 20,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 15,
+    },
+    textInput: {
+        width: '100%',
+        height: 40,
+        borderColor: '#ccc',
+        borderWidth: 1,
+        borderRadius: 15,
+        paddingHorizontal: 10,
+        marginBottom: 10,
+    },
+    modalButtonContainer: {
+        flexDirection: 'column',
+        justifyContent: 'center', 
+        itemContents: 'center',
+        alignContent: 'center',
+        alignItems: 'center',
+        width: '100%',
+        marginTop: 1,
+    },
+    fab: {
+        position: 'absolute', // Ekranın üzerinde serbestçe gezer
+        width: 60,
+        height: 60,
+        borderRadius: 30, // Tam daire yapar (width/2)
+        backgroundColor: 'purple', // Ana tema renginiz (veya dilediğiniz renk)
+        justifyContent: 'center',
+        alignItems: 'center',
+        right: 30, // Sağdan 20 piksel
+        bottom: 45, // Alttan 20 piksel
+        elevation: 15, // Android gölgesi
+        shadowColor: '#000', // iOS gölgesi
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
     }
-
-
 })
