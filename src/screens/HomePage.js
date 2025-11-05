@@ -7,6 +7,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useDispatch } from 'react-redux';
 import { logout } from '../redux/userSlice';
+import Animated, {BounceIn, BounceOut} from 'react-native-reanimated';
 
 
 const HomePage = () => {
@@ -20,9 +21,9 @@ const HomePage = () => {
     const [data, setData] = useState([]);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
-    const [editName, setEditName] = useState('');
-    const [editDescription, setEditDescription] = useState('');
-    const [editPoints, setEditPoints] = useState('');
+    const [editTitle, setEditTitle] = useState('');
+    const [editTask, setEditTask] = useState('');
+    const [editDeadline, setEditDeadline] = useState('');
     //console.log("data: ", data);
 
     useLayoutEffect(() => {
@@ -41,17 +42,17 @@ const HomePage = () => {
 
     const addData = async () => {
         try {
-            const newPoints = Number(editPoints)
-            const docRef = await addDoc(collection(db, "Lessons"), {
-                name: editName,
-                description: editDescription,
-                points: newPoints
+            //const newPoints = Number(editPoints)
+            const docRef = await addDoc(collection(db, "Tasks"), {
+                title: editTitle,
+                task: editTask,
+                deadline: editDeadline
             });
             const newItem = {
                 id: docRef.id,
-                name: editName,
-                description: editDescription,
-                points: newPoints
+                title: editTitle,
+                task: editTask,
+                deadline: editDeadline
             };
             setData(currentData => [...currentData, newItem]);
             handleCancelEdit();
@@ -74,7 +75,7 @@ const HomePage = () => {
         const allData = []
 
         try {
-            const querySnapshot = await getDocs(collection(db, "Lessons"));
+            const querySnapshot = await getDocs(collection(db, "Tasks"));
             querySnapshot.forEach((doc) => {
                 //console.log(`${doc.id} => ${JSON.stringify(doc.data())}`);
                 allData.push({...doc.data(), id: doc.id});
@@ -89,7 +90,7 @@ const HomePage = () => {
 
     const deleteData=async(id)=>{
         try {
-            await deleteDoc(doc(db, "Lessons", id));
+            await deleteDoc(doc(db, "Tasks", id));
 
             setData(currentData => currentData.filter(item => item.id !== id));
 
@@ -101,17 +102,17 @@ const HomePage = () => {
 
     const handleAddPress = () => {
         setSelectedItem(null); // Seçili öğe yok = "Ekle" modu
-        setEditName('');       // Input'ları boşalt
-        setEditDescription('');
-        setEditPoints('');
+        setEditTitle('');       // Input'ları boşalt
+        setEditTask('');
+        setEditDeadline('');
         setIsModalVisible(true); // Modalı aç
     };
 
     const handleEditPress = (item) => {
         setSelectedItem(item);
-        setEditName(item.name);
-        setEditDescription(item.description);
-        setEditPoints(item.points.toString());
+        setEditTitle(item.title);
+        setEditTask(item.task);
+        setEditDeadline(item.deadline);
         setIsModalVisible(true);
     }
 
@@ -125,17 +126,17 @@ const HomePage = () => {
         if (!selectedItem) return;
 
         try {
-            const lessonRef = doc(db, "Lessons", selectedItem.id);
+            const lessonRef = doc(db, "Tasks", selectedItem.id);
             await updateDoc(lessonRef, {
-                name: editName,
-                description: editDescription,
-                points: Number(editPoints)
+                title: editTitle,
+                task: editTask,
+                deadline: editDeadline
             })
             
             setData(currentData => 
                 currentData.map(item => 
                     item.id === selectedItem.id 
-                ? { ...item, name: editName, description: editDescription, points: Number(editPoints) } 
+                ? { ...item, title: editTitle, task: editTask, deadline: editDeadline } 
                 : item
             ));
 
@@ -152,14 +153,17 @@ const HomePage = () => {
         <View style ={styles.container}>
             
             <ScrollView style={styles.scrollableList}>
-                {data.map((item) => (
+                {data.map((item, index) => (
                     <View key={item.id} style={styles.listItem}>
                         
-                        <View style={styles.itemContent}>
-                            <Text>Name: {item.name}</Text>
-                            <Text>Description: {item.description}</Text>
-                            <Text>Points: {item.points}</Text>
-                        </View>
+                        <Animated.View 
+                            entering={BounceIn.delay(100 * (index) + 1)}
+                            exiting={BounceOut.delay(500)}
+                            style={styles.itemContent}>
+                                <Text>Title: {item.title}</Text>
+                                <Text>Mission: {item.task}</Text>
+                                <Text>Deadline: {item.deadline}</Text>
+                        </Animated.View>
 
                         <View style={styles.actionButtons}>
                             <TouchableOpacity 
@@ -188,36 +192,36 @@ const HomePage = () => {
                 <View style={styles.modalContainer}>
                     <View style={styles.modalView}>
                         <Text style={styles.modalTitle}>
-                            {selectedItem ? "Dersi Düzenle" : "Yeni Ders Ekle"}
+                            {selectedItem ? "Edit Task" : "Add New Task"}
                         </Text>
                         
                         <TextInput
                             style={styles.textInput}
-                            placeholder="Ders Adı"
-                            value={editName}
-                            onChangeText={setEditName}
+                            placeholder="Task Title"
+                            value={editTitle}
+                            onChangeText={setEditTitle}
                         />
                         <TextInput
                             style={styles.textInput}
-                            placeholder="Açıklama"
-                            value={editDescription}
-                            onChangeText={setEditDescription}
+                            placeholder="Task"
+                            value={editTask}
+                            onChangeText={setEditTask}
                         />
                         <TextInput
                             style={styles.textInput}
-                            placeholder="Puan"
-                            value={editPoints}
-                            onChangeText={setEditPoints}
-                            keyboardType="numeric" // Sadece sayı girilsin
+                            placeholder="Deadline"
+                            value={editDeadline}
+                            onChangeText={setEditDeadline}
+                            keyboardType="numeric" 
                         />
 
                         <View style={styles.modalButtonContainer}>
                             <CustomButton
-                                buttonText="İptal"
+                                buttonText="Cancel"
                                 handleOnPress={handleCancelEdit}
                             />
                             <CustomButton
-                                buttonText="Kaydet"
+                                buttonText="Save"
                                 handleOnPress={handleModalSave}
                             />
                         </View>
