@@ -6,6 +6,7 @@ import { CustomButton } from '../components/';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useDispatch } from 'react-redux';
+import { logout } from '../redux/userSlice';
 
 
 const HomePage = () => {

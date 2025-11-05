@@ -1,12 +1,25 @@
 import React, { useState } from "react";
 import { StyleSheet, View, Text, Image, Pressable } from "react-native";
-import { CustomTextInput, CustomButton } from "../components/";
+import { CustomTextInput, CustomButton, Loading } from "../components/";
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useDispatch, useSelector} from "react-redux";
+import { register } from "../redux/userSlice";
 
 const SignUpPage = ({navigation}) => {
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [name, setName] = useState("");
+
+  const dispatch = useDispatch();
+  const {isLoading} = useSelector((state) => state.user);
+
+  const handleRegister = () => {
+    dispatch(register({email, pass}));
+  }
+
+  if (isLoading) {
+    return <Loading/>
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -14,7 +27,7 @@ const SignUpPage = ({navigation}) => {
           <Image style={styles.image}
                   source={require('../../assets/images/signupicon.png')}
                 />
-           <Text style={styles.signUpText}>Sign Up</Text>     
+          <Text style={styles.signUpText}>Sign Up</Text>     
         </View>
         <View style={styles.textContainer}>
           <CustomTextInput
@@ -42,7 +55,7 @@ const SignUpPage = ({navigation}) => {
         <View style={styles.signUpOptions}>
           <CustomButton
             buttonText="Sign Up"
-            handleOnPress={() => console.log(name," ", email," ", pass)}
+            handleOnPress={ handleRegister }
           />
           <Pressable onPress={() => navigation.navigate('Login')}>
             <Text style={{fontWeight:'bold'}}>Already have an account? Login</Text>
