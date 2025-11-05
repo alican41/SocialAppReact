@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import { getAuth, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const login = createAsyncThunk('user/login', async ({ email, pass }) => {
@@ -38,6 +38,19 @@ export const autoLogin = createAsyncThunk('user/autoLogin', async () => {
         throw error
     }
 })
+
+//logout
+export const logout = createAsyncThunk('user/logout', async () => {
+    try {
+        const auth = getAuth()
+        await signOut(auth);
+        await AsyncStorage.removeItem('userToken');
+        return null
+    } catch (error) {
+        throw error
+    }
+})
+    
     
 
 const initialState = {
@@ -95,6 +108,20 @@ export const userSlice = createSlice({
                 state.isAuth = false;
                 state.isLoading = false;
                 state.token = null;
+                state.error = action.error.message;
+            })
+            .addCase(logout.pending, (state) => {
+                state.isLoading = true;
+            })
+            .addCase(logout.fulfilled, (state) => {
+                state.isAuth = false;
+                state.isLoading = false;
+                state.token = null;
+                state.user = null;
+                state.error = null;
+            })
+            .addCase(logout.rejected, (state, action) => {
+                state.isLoading = false;
                 state.error = action.error.message;
             })
         }

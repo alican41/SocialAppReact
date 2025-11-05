@@ -1,12 +1,20 @@
-import React, {useState, useEffect, use} from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Modal, TextInput } from 'react-native';
+import React, {useState, useEffect, useLayoutEffect, useCallback} from 'react';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Modal, TextInput, Button } from 'react-native';
 import { collection, addDoc, getDocs, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { CustomButton } from '../components/';
 import { FontAwesome5 } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { useDispatch } from 'react-redux';
 
 
 const HomePage = () => {
+
+    const navigation = useNavigation();
+    const dispatch = useDispatch();
+    const logoutFunction = useCallback(() => {
+        dispatch(logout());
+    }, [dispatch]);
 
     const [data, setData] = useState([]);
     const [isModalVisible, setIsModalVisible] = useState(false);
@@ -15,6 +23,16 @@ const HomePage = () => {
     const [editDescription, setEditDescription] = useState('');
     const [editPoints, setEditPoints] = useState('');
     //console.log("data: ", data);
+
+    useLayoutEffect(() => {
+        navigation.setOptions({
+            headerRight: () => (
+                    <TouchableOpacity onPress={logoutFunction} style={{ marginRight: 15 }}>
+                        <FontAwesome5 name="sign-out-alt" size={24} color="#fff" />
+                    </TouchableOpacity>
+            ),
+        });
+    }, [navigation, logoutFunction]);
 
     useEffect(() => {
         getData();
