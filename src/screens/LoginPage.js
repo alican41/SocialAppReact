@@ -1,10 +1,10 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, Image } from 'react-native';
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {Loading, CustomTextInput, CustomButton} from '../components/';
 import { useSelector, useDispatch } from 'react-redux';
 import { setIsLoading } from '../redux/userSlice';
-import { login } from '../redux/userSlice'; 
+import { login, autoLogin } from '../redux/userSlice'; 
 
 
 
@@ -16,6 +16,12 @@ const LoginPage = ({navigation}) => {
 
   const { isLoading } = useSelector((state) => state.user);
   const dispatch = useDispatch();
+
+  //autologin
+  useEffect(() => {
+    dispatch(autoLogin())
+  }, []);
+                        
 
   return (
     <View style={styles.container}>
