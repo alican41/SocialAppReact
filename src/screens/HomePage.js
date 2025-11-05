@@ -1,8 +1,10 @@
 import React, {useState, useEffect, use} from 'react';
-import { StyleSheet, View, Text, ScrollView } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { collection, addDoc, getDocs, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { CustomButton } from '../components/';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import { current } from '@reduxjs/toolkit';
 
 const HomePage = () => {
 
@@ -35,7 +37,7 @@ const HomePage = () => {
             const querySnapshot = await getDocs(collection(db, "Lessons"));
             querySnapshot.forEach((doc) => {
                 //console.log(`${doc.id} => ${JSON.stringify(doc.data())}`);
-                allData.push(doc.data());
+                allData.push({...doc.data(), id: doc.id});
         }); 
         setData(allData)
         } catch (error) {
@@ -45,8 +47,16 @@ const HomePage = () => {
         
     }
 
-    const deleteData=async()=>{
-        await deleteDoc(doc(db, "Lessons", "0zMYge6gDlvEiwUe0fwK"));
+    const deleteData=async(id)=>{
+        try {
+            await deleteDoc(doc(db, "Lessons", id));
+
+            setData(currentData => currentData.filter(item => item.id !== id));
+
+        } catch (error) {
+            console.log(error)
+        }
+        
     }
 
     const updateData=async()=>{
@@ -66,11 +76,22 @@ const HomePage = () => {
         <View style ={styles.container}>
             
             <ScrollView style={styles.scrollableList}>
-                {data.map((item, index) => (
-                    <View key={index} style={styles.listItem}>
-                        <Text>Name: {item.name}</Text>
-                        <Text>Description: {item.description}</Text>
-                        <Text>Points: {item.points}</Text>
+                {data.map((item) => (
+                    <View key={item.id} style={styles.listItem}>
+                        
+                        <View style={styles.itemContent}>
+                            <Text>Name: {item.name}</Text>
+                            <Text>Description: {item.description}</Text>
+                            <Text>Points: {item.points}</Text>
+                        </View>
+
+                        <TouchableOpacity 
+                            onPress={() => deleteData(item.id)}
+                            style={styles.deleteButton}
+                        >
+                            <Icon name="delete" size={24} color="#E53935" /> 
+                        </TouchableOpacity>
+
                     </View>
                 ))}
             </ScrollView>
@@ -118,8 +139,16 @@ const styles = StyleSheet.create({
     listItem: {
         marginBottom: 15,
         padding: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
         backgroundColor: '#f9f9f9',
         borderRadius: 5,
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 1.41,
     },
     buttonContainer: {
         paddingTop: 10,
@@ -128,6 +157,13 @@ const styles = StyleSheet.create({
         alignContent: 'center',
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    itemContent: {
+        flex: 1,
+        marginRight: 10,
+    },
+    deleteButton: {
+        padding: 5
     }
 
 
